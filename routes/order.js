@@ -16,7 +16,7 @@ const requireLogin = (req, res, next) => {
 //Read
 router.get('/orders', async (_req, res) => {
   try {
-    const ordersDB = await Order.find().populate(['products', 'seller', 'client']);
+    const ordersDB = await Order.find().populate(['products.product', 'products.seller', 'client', 'comments.author', 'comments.to']).sort({orderDate : -1});
     res.status(200).json(ordersDB);
   } catch (error) {
     res.status(500).json(`Error occurred ${error}`);
@@ -26,7 +26,7 @@ router.get('/orders', async (_req, res) => {
 //Get sale orders
 router.get('/orders/sales', requireLogin, async (req, res) => {
   try {
-    const ordersDB = await Order.find({seller: req.user._id}).populate(['products', 'seller', 'client']);
+    const ordersDB = await Order.find({'products.seller': req.user._id}).populate(['products.product', 'products.seller', 'client', 'comments.author', 'comments.to']).sort({orderDate : -1});
     res.status(200).json(ordersDB);
 
   } catch (error) {
@@ -38,7 +38,7 @@ router.get('/orders/sales', requireLogin, async (req, res) => {
 //Get purchase orders
 router.get('/orders/purchases', requireLogin, async (req, res) => {
   try {
-    const ordersDB = await Order.find({client: req.user._id}).populate(['products', 'seller', 'client']);
+    const ordersDB = await Order.find({client: req.user._id}).populate(['products.product', 'products.seller', 'client', 'comments.author', 'comments.to']).sort({orderDate : -1});
     res.status(200).json(ordersDB);
 
   } catch (error) {
@@ -50,8 +50,9 @@ router.get('/orders/purchases', requireLogin, async (req, res) => {
 //Create order - no shipped date or comment at this moment
 router.post('/orders', requireLogin, async (req, res) => {
   try {
-    const {products, total, seller, client, orderDate, status} = req.body;
-    if(!products || !seller || !client || !status) {
+    console.log(req.body);
+    const {products, total, client, orderDate, status} = req.body;
+    if(!products || !client || !status) {
       res.status(400).json(`Missing fields`);
       return;
     }
@@ -59,15 +60,14 @@ router.post('/orders', requireLogin, async (req, res) => {
     const order = await Order.create({
       products,
       total,
-      seller,
       client,
       orderDate,
       status
     });
-
-    //add order as sales to the seller
-    await User.findByIdAndUpdate(seller, {$push: {sales: order.id}});
-    console.log('Order added to the seller');
+    
+    //add order as sales to the seller(s)
+    products.map(async product => await User.findByIdAndUpdate(product.seller, {$push: {sales: order.id}}));
+    console.log('Order added to the sellers');
     //add order as purchases to the client
     await User.findByIdAndUpdate(client, {$push: {purchases: order.id}});
     console.log('Order added to the client');
@@ -119,12 +119,13 @@ router.get('/orders/:id', async (req, res) => {
 router.put('/orders/:id', requireLogin, async (req, res) => {
   try {
     let order = await Order.findById(req.params.id);
-    if(! order.seller.equals(req.user._id)) {
+    let foundSeller = order.products.find(product => product.seller.equals(req.user._id));
+    if(! !foundSeller) {
       res.status(401).json('You cannot edit this order.');
       return;
     }
     
-    const productWithNewData = req.body;
+    const orderWithNewData = req.body;
     const {comments} = req.body;
 
     if(comments) {
@@ -132,7 +133,7 @@ router.put('/orders/:id', requireLogin, async (req, res) => {
       return;
     }
 
-    await Order.findByIdAndUpdate(req.params.id, productWithNewData);
+    await Order.findByIdAndUpdate(req.params.id, orderWithNewData);
     res.status(200).json(`Order with id ${req.params.id} was updated`);
   } catch (error) {
     res.status(500).json(`Error occurred ${error}`);
@@ -143,17 +144,36 @@ router.put('/orders/:id', requireLogin, async (req, res) => {
 router.put('/orders/:id/comment', requireLogin, async (req, res) => {
   try {
     let order = await Order.findById(req.params.id);
-    if(! (order.seller.equals(req.user._id) || order.client.equals(req.user._id))) {
+    let foundSeller = order.products.find(product => product.seller.equals(req.user._id));
+    if(! (foundSeller || order.client.equals(req.user._id))) {
       res.status(401).json('You cannot add comments to this order.');
       return;
     }
 
-    const comment = req.body;
-    await Order.findByIdAndUpdate(req.params.id, {$push: {comments: comment}});
+    const {comment, to} = req.body;
+    await Order.findByIdAndUpdate(req.params.id, {$push: {comments: {author: req.user._id, to: to, comment: comment}}});
     res.status(200).json(`Comment added to the order with id ${req.params.id}`);
   } catch (error) {
-    res.status(500).json(`Error occured ${error}`);
+    res.status(500).json(`Error occurred ${error}`);
   }
 });
+
+//Update status
+router.put('/orders/:id/status', requireLogin, async (req, res) => {
+  try {
+    let order = await Order.findById(req.params.id);
+    let foundSeller = order.products.find(product => product.seller.equals(req.user._id));
+    if(! foundSeller) {
+      res.status(401).json('You cannot edit the status of this order.');
+      return;
+    }
+
+    const {status} = req.body;
+    await Order.findByIdAndUpdate(req.params.id, {status: status});
+    res.status(200).json(`Status changed to the order with id ${req.params.id}`);
+  } catch (error) {
+    res.status(500).json(`Error occurred ${error}`);
+  }
+})
 
 module.exports = router;

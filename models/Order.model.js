@@ -12,17 +12,22 @@ const orderSchema = new Schema({
       type: Number,
       required: true,
       max: 99
+    },
+    seller: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
     }
   }],
   total: {
     type: Number,
     required: true
   },
-  seller: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
+  // seller: {
+  //   type: Schema.Types.ObjectId,
+  //   ref: 'User',
+  //   required: true
+  // },
   client: {
     type: Schema.Types.ObjectId,
     ref: 'User',
@@ -49,6 +54,10 @@ const orderSchema = new Schema({
     comment: {
       type: String,
       trim: true
+    },
+    to: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
     },
     date: {
       type: Date,

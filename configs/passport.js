@@ -21,7 +21,7 @@ passport.deserializeUser((userIdFromSession, cb) => {
     // });
 
     User.findById(userIdFromSession)
-    .populate(['sales', 'purchases', 'categories', 'products'])
+    .populate(['sales', 'purchases', 'categories', 'products', 'cart.product'])
     .exec(function (err, userDocument) {
         if(err) {
           cb(err);

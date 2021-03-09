@@ -7,6 +7,10 @@ const userSchema = new Schema({
     trim: true,
     required: [true, 'Your name is required']
   },
+  profile_picture: {
+    type: String,
+    default: '/images/prof-picture-standard.jpg'
+  },
   storeName: {
     type: String,
     trim: true,
@@ -91,7 +95,6 @@ const userSchema = new Schema({
     },
     phone: {
       type: String,
-      required: true,
       maxLength: 20
     },
     phoneConfirmed: {

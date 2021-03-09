@@ -26,10 +26,21 @@ router.get('/categories/me', requireLogin, async (req, res) => {
 });
 
 //Read - only categories created by you and the admin
-router.get('/categories', requireLogin, async (_req, res) => {
+router.get('/categories', requireLogin, async (req, res) => {
   try {
-    const admin = await User.find({username: 'admin'});
-    const categoriesDB = await Category.find({createdBy: [req.user._id, admin.id]}).populate('createdBy');
+    const admin = await User.findOne({username: 'admin'});
+    const categoriesDB = await Category.find({createdBy: [req.user._id, admin._id]}).populate('createdBy');
+    res.status(200).json(categoriesDB);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json(`Error occurred ${error}`);
+  }
+});
+
+//All categories
+router.get('/categories/all', async (_req, res) => {
+  try {
+    const categoriesDB = await Category.find().populate('createdBy');
     res.status(200).json(categoriesDB);
   } catch (error) {
     console.log(error);
@@ -38,21 +49,21 @@ router.get('/categories', requireLogin, async (_req, res) => {
 });
 
 //Create
-router.post('/categories', async (req, res) => {
+router.post('/categories', requireLogin, async (req, res) => {
   try {
-    const {name, createdBy} = req.body;
+    const {name} = req.body;
     
-    if(!name || !createdBy) {
+    if(!name) {
       res.status(400).json(`Missing fields`);
       return;
     }
     
     const category = await Category.create({
       name,
-      createdBy
+      createdBy: req.user._id
     });
 
-    await User.findByIdAndUpdate(createdBy, {$push: {categories: category.id}});
+    await User.findByIdAndUpdate(req.user._id, {$push: {categories: category.id}});
     console.log('Category added to the user');
     res.status(200).json(category);
   } catch (error) {

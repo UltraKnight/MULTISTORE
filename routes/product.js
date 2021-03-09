@@ -4,6 +4,7 @@ const router = express.Router();
 const Product = require('../models/Product.model');
 const User = require('../models/User.model');
 const fileUpload = require('../configs/cloudinary');
+const bcrypt = require('bcryptjs');
 
 const requireLogin = (req, res, next) => {
   if(req.user) {
@@ -27,7 +28,7 @@ router.get('/products/me', requireLogin, async (req, res) => {
 });
 
 //Get products by category
-router.get('/products/:categoryId', requireLogin, async (req, res) => {
+router.get('/products/by-category/:categoryId', async (req, res) => {
   try {
     const productsDB = await Product.find({category: req.params.categoryId}).populate(['category', 'createdBy']);
     res.status(200).json(productsDB);
@@ -39,9 +40,17 @@ router.get('/products/:categoryId', requireLogin, async (req, res) => {
 });
 
 //Read
-router.get('/products', async (_req, res) => {
+router.get('/products', async (req, res) => {
+  const search = req.query.query ? req.query.query : '';
+  const limit = req.query.limit ? Number(req.query.limit) : 0;
+  const stock = req.query.stock === 'true' ? 1 : 0;
   try {
-    const productsDB = await Product.find().populate(['category', 'createdBy']);
+    let productsDB = [];
+    if(search) {
+      productsDB = await Product.find({name: { "$regex": `${search}`, "$options": "i" }, quantity: {"$gte": stock}}).limit(limit).populate(['category', 'createdBy']);
+    } else {
+      productsDB = await Product.find().limit(limit).populate(['category', 'createdBy']);
+    }
     res.status(200).json(productsDB);
   } catch (error) {
     console.log(error);
@@ -50,11 +59,11 @@ router.get('/products', async (_req, res) => {
 });
 
 //Create
-router.post('/products', async (req, res) => {
+router.post('/products', requireLogin, async (req, res) => {
   try {
-    const {name, description, image_url, category, quantity, price, createdBy} = req.body;
+    const {name, description, image_url, category, quantity, price} = req.body;
     
-    if(!name || !category || !quantity || !price || !createdBy) {
+    if(!name || !category || !quantity || !price) {
       res.status(400).json(`Missing fields`);
       return;
     }
@@ -66,10 +75,10 @@ router.post('/products', async (req, res) => {
       category,
       quantity,
       price,
-      createdBy
+      createdBy: req.user._id
     });
 
-    await User.findByIdAndUpdate(createdBy, {$push: {products: product.id}});
+    await User.findByIdAndUpdate(req.user._id, {$push: {products: product.id}});
     console.log('Product added to the user');
     res.status(200).json(product);
   } catch (error) {
@@ -114,7 +123,7 @@ router.get('/products/:id', async (req, res) => {
 router.put('/products/:id', requireLogin, async (req, res) => {
   try {
     let product = await Product.findById(req.params.id);
-    if(! product.createdBy.equals(req.user._id)) {
+    if(!product.createdBy.equals(req.user._id)) {
       res.status(401).json('You cannot edit a product you did\'nt create.');
       return;
     }
@@ -122,6 +131,26 @@ router.put('/products/:id', requireLogin, async (req, res) => {
     const productWithNewData = req.body;
     await Product.findByIdAndUpdate(req.params.id, productWithNewData);
     res.status(200).json(`Product with id ${req.params.id} was updated`);
+  } catch (error) {
+    res.status(500).json(`Error occurred ${error}`);
+  }
+});
+
+//Sell
+router.put('/products/:id/sell', requireLogin, async (req, res) => {
+  try {
+    let admin = await User.findOne({username: 'admin'});
+    let product = await Product.findById(req.params.id);
+    let {quantity} = req.body;
+    console.log('true', (!product.createdBy.equals(req.user._id)) || (!bcrypt.compareSync(process.env.ADMIN_PASS, admin.password)));
+    if(!(product.createdBy.equals(req.user._id) || bcrypt.compareSync(process.env.ADMIN_PASS, admin.password))) {
+      res.status(401).json('Unauthorized action.');
+      return;
+    }
+
+    await Product.findByIdAndUpdate(req.params.id, {$inc: {quantity: -quantity}});
+    res.status(200).json('Product updated!');
+
   } catch (error) {
     res.status(500).json(`Error occurred ${error}`);
   }

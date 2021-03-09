@@ -8,6 +8,7 @@ const requireLogin = (req, res, next) => {
   if(req.user) {
     next();
   } else {
+    console.log(req.user)
     res.status(401).json('You must be logged in to access this content');
     return;
   }
@@ -16,9 +17,10 @@ const requireLogin = (req, res, next) => {
 //username, password, email, fullname
 router.post('/signup', (req, res) => {
     const { username, password, fullName, email } = req.body;
+
     //Server side validation on empty fields
     if (username === '' || password === '' || email === '' || fullName === '') {
-      res.state(400).json('missing fields')
+      res.status(400).json('missing fields')
       return;
     }
     //Server side validation on password constrain
@@ -48,8 +50,10 @@ router.post('/signup', (req, res) => {
         }).catch((error) => {
           //.code is mongoose validation error
           if (error.code === 11000) {
-            res.status(500).json('username should be unique')
+            res.status(500).json('username should be unique');
+            return;
           }
+          res.status(500).json(error);
         });
       });
   });
@@ -95,7 +99,6 @@ router.get('/loggedin', (req, res) => {
 router.post('/cart/add', requireLogin, async (req, res) => {
   
   const product = req.body;
-  
   try {
     const foundUser = await User.findById(req.user._id);
     const productInCart = await foundUser.cart.find(item => item.product.equals(product.product));
@@ -115,12 +118,28 @@ router.post('/cart/add', requireLogin, async (req, res) => {
 
 //product = {product: id, quantity: 00}
 //if quantity === 0 - remove the product else decrement the quantity
-router.delete('/cart/remove', requireLogin, async (req, res) => {
+router.post('/cart/remove', requireLogin, async (req, res) => {
   const product = req.body;
-
   try {
-    const foundUser = await User.findById(req.user._id).populate('cart');
-    const productInCart = await foundUser.cart.find(item => item.product.equals(product.product));
+    const foundUser = await User.findById(req.user._id).populate('cart.product');
+    //if there is at least one deleted product in the cart
+    for (const item of foundUser.cart) {
+      if(! item.product) {
+        const index = foundUser.cart.indexOf(item);
+        foundUser.cart.splice(index, 1);
+        await User.findByIdAndUpdate(req.user._id, {cart : foundUser.cart});
+        res.status(200).json('A deleted product was removed from your cart.');
+        return;
+      }
+    }
+
+    if(! product.product) {
+      res.status(400).json('Invalid product');
+      return;
+    }
+
+    //if the product was not deleted by the seller
+    const productInCart = await foundUser.cart.find(item => item.product._id.equals(product.product));
     if(productInCart && product.quantity > 0 && productInCart.quantity > product.quantity) {
       const index = foundUser.cart.indexOf(productInCart);
       foundUser.cart[index].quantity -= product.quantity;
