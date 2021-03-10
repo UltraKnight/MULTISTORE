@@ -39,10 +39,10 @@ app.use(session({
   saveUninitialized: true,
   resave: false,
   cookie: {
-    sameSite: 'none', //true, //the requester is on the same domain
-    secure: 'true', //false, //not using https
-    httpOnly: false, //true,  //site on http only
-    maxAge: 60000 //cookie time to live
+    sameSite: true, //true, //the requester is on the same domain
+    secure: false, //false, //not using https
+    httpOnly: false,  //site on http only
+    maxAge: 60000000 //cookie time to live
   },
   rolling: true //session gets refreshed
 }))
