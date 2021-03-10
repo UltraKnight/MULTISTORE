@@ -32,15 +32,17 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+app.set('trusty proxy', 1);
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   saveUninitialized: true,
   resave: false,
   cookie: {
-    sameSite: true, //the requester is on the same domain
-    secure: false, //not using https
-    httpOnly: true, //site on http only
-    maxAge: 60000 //cookie time to live
+    sameSite: 'none', //true, //the requester is on the same domain
+    secure: 'true', //false, //not using https
+    httpOnly: false, //true,  //site on http only
+    maxAge: 60000000 //cookie time to live
   },
   rolling: true //session gets refreshed
 }))
