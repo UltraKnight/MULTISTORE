@@ -26,13 +26,13 @@ mongoose
 
 const app = express();
 
+app.set('trusty proxy', 1);
+
 // Middleware Setup
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-
-app.set('trusty proxy', 1);
 
 app.use(session({
   secret: process.env.SESSION_SECRET,
