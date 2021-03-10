@@ -26,7 +26,7 @@ mongoose
 
 const app = express();
 
-app.set('trusty proxy', 1);
+app.set('trust proxy', 1);
 
 // Middleware Setup
 app.use(logger('dev'));
@@ -42,7 +42,7 @@ app.use(session({
     sameSite: 'none', //true, //the requester is on the same domain
     secure: 'true', //false, //not using https
     httpOnly: false, //true,  //site on http only
-    maxAge: 60000000 //cookie time to live
+    maxAge: 60000 //cookie time to live
   },
   rolling: true //session gets refreshed
 }))
