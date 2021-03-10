@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const Order = require('../models/Order.model');
 const User = require('../models/User.model');
+const stripe = require("stripe")('sk_test_51IT8KtGAKMDxiOOtdWC9ORYmkqPMMYflkIfa1rllOa0TwTzj0EPhDFeJOEgIjaS0uXfyfU3kUphBjmwJP5IQWqsr004ofwcFwa');
 
 const requireLogin = (req, res, next) => {
   if(req.user) {
@@ -163,7 +164,7 @@ router.put('/orders/:id/status', requireLogin, async (req, res) => {
   try {
     let order = await Order.findById(req.params.id);
     let foundSeller = order.products.find(product => product.seller.equals(req.user._id));
-    if(! foundSeller) {
+    if(! (foundSeller || order.client.equals(req.user._id))) {
       res.status(401).json('You cannot edit the status of this order.');
       return;
     }
@@ -175,5 +176,38 @@ router.put('/orders/:id/status', requireLogin, async (req, res) => {
     res.status(500).json(`Error occurred ${error}`);
   }
 })
+
+//Calculate order
+const calculateOrderAmount = userCart => {
+  let total = userCart.reduce((accumulator, curr) => accumulator + curr.quantity * curr.product.price, 0).toFixed(2);
+  total = parseInt(total * 100);
+  return total
+}
+
+//Payment
+router.post("/create-payment-intent", async (req, res) => {
+  const {userCart} = req.body;
+  // Create a PaymentIntent with the order amount and currency
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: calculateOrderAmount(userCart),
+    currency: "eur"
+  });
+  res.send({
+    clientSecret: paymentIntent.client_secret
+  });
+});
+
+//Retry payment
+router.post("/retry-payment-intent", async (req, res) => {
+  const {total} = req.body;
+  // Create a PaymentIntent with the order amount and currency
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: parseInt(total * 100),
+    currency: "eur"
+  });
+  res.send({
+    clientSecret: paymentIntent.client_secret
+  });
+});
 
 module.exports = router;
