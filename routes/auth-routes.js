@@ -3,6 +3,10 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const User = require('../models/User.model');
 const passport = require('passport');
+const emailController = require('./email/email.controller');
+
+const templates = require('./email/email.templates');
+const sendEmail = require('./email/email.send');
 
 const requireLogin = (req, res, next) => {
   if(req.user) {
@@ -15,48 +19,79 @@ const requireLogin = (req, res, next) => {
 }
 
 //username, password, email, fullname
-router.post('/signup', (req, res) => {
-    const { username, password, fullName, email } = req.body;
+router.post('/signup', async (req, res) => {
+  const { username, password, fullName, email } = req.body;
 
-    //Server side validation on empty fields
-    if (username === '' || password === '' || email === '' || fullName === '') {
-      res.status(400).json('missing fields')
+  //Server side validation on empty fields
+  if (username === '' || password === '' || email === '' || fullName === '') {
+    res.json('missing fields');
+    return;
+  }
+
+  const emailAfterAt = email.substring(email.length, email.indexOf('@'));
+  if(! emailAfterAt.includes('.')) {
+    res.json('invalid email');
+    return;
+  }
+
+  //Server side validation on password constrain
+  //Regular expressions
+  const passwordRegex = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/;
+  if (passwordRegex.test(password) === false) {
+    res.status(200).json('weak password');
+    return;
+  }
+
+  const emailExists = await User.findOne({email});
+  if(emailExists) {
+    res.status(200).json('email already registered');
+    return;
+  }
+
+  User.findOne({username: username})
+  .then((user) => {
+    if (user) {
+      res.status(200).json('username already exists');
       return;
     }
-    //Server side validation on password constrain
-    //Regular expressions
-    const passwordRegex = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/;
-    if (passwordRegex.test(password) === false) {
-      res.status(400).json('weak password');
-      return;
-    }
-    User.findOne({username: username})
-      .then((user) => {
-        if (user) {
-          res.status(400).json('username already exists');
-          return;
-        }
-        //Create the user
-        const saltRounds = 10;
-        const salt = bcrypt.genSaltSync(saltRounds);
-        const hashPassword = bcrypt.hashSync(password, salt);
-        User.create({
-          fullName,
-          username,
-          password: hashPassword,
-          email
-        }).then((response) => {
-          res.status(200).json(response)
-        }).catch((error) => {
-          //.code is mongoose validation error
-          if (error.code === 11000) {
-            res.status(500).json('username should be unique');
-            return;
-          }
-          res.status(500).json(error);
-        });
-      });
+
+    //Create the user
+    const saltRounds = 10;
+    const salt = bcrypt.genSaltSync(saltRounds);
+    const hashPassword = bcrypt.hashSync(password, salt);
+    User.create({
+      fullName,
+      username,
+      password: hashPassword,
+      email
+    }).then(async (response) => {
+      await sendEmail(response.email, templates.confirm(response._id));
+      res.status(200).json(response);
+    }).catch((error) => {
+      //.code is mongoose validation error
+      if (error.code === 11000) {
+        res.status(500).json('username should be unique');
+        return;
+      }
+      res.status(500).json(error);
+    });
   });
+});
+
+router.post('/email/send', async (req, res) => {
+  try {
+    const {email, id} = req.body;
+    console.log(email);
+    console.log(id);
+    await sendEmail(email, templates.confirm(id));
+    res.status(200).json('Email sent');
+  } catch (error) {
+    console.log(error);
+    res.status(500).json(`Error: ${error}`);
+  }
+});
+
+router.get('/email/confirm/:id', emailController.confirmEmail);
 
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, theUser, failureDetails) => {
