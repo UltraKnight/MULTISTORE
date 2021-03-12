@@ -7,7 +7,10 @@ const productSchema = new Schema({
     required: true,
     trim: true
   },
-  description: String,
+  description: {
+    type: String,
+    trim: false
+  },
   image_url: {
     type: String,
     trim: true
