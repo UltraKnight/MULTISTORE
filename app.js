@@ -39,8 +39,8 @@ app.use(session({
   saveUninitialized: true,
   resave: false,
   cookie: {
-    sameSite: 'none', //true, //the requester is on the same domain
-    secure: true, //false, //not using https
+    sameSite: true, //true, //the requester is on the same domain
+    secure: false, //false, //not using https
     httpOnly: false,  //site on http only
     maxAge: 60000000 //cookie time to live
   },
@@ -81,5 +81,8 @@ app.use('/api', product);
 
 const order = require('./routes/order');
 app.use('/api', order);
+
+const rate = require('./routes/rate');
+app.use('/api', rate);
 
 module.exports = app;
