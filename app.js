@@ -1,4 +1,4 @@
-if (process.env.ENV !== 'local') require('dotenv').config();
+require('dotenv').config();
 const {MONGODB_URI} = process.env;
 const bodyParser   = require('body-parser');
 const cookieParser = require('cookie-parser');
