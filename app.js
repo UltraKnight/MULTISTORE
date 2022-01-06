@@ -1,4 +1,4 @@
-require('dotenv').config();
+// require('dotenv').config();
 const {MONGODB_URI} = process.env;
 const bodyParser   = require('body-parser');
 const cookieParser = require('cookie-parser');
@@ -18,10 +18,10 @@ mongoose
   {useNewUrlParser: true, useUnifiedTopology: true}
   )
   .then(x => {
-    console.log(`Connected to Mongo! Database name: "${x.connections[0].name}"`)
+    console.log(`Connected to Mongo! Database name: "${x.connections[0].name}"`);
   })
   .catch(err => {
-    console.error('Error connecting to mongo', err)
+    console.error('Error connecting to mongo', err);
   });
 
 const app = express();
@@ -33,19 +33,19 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-
 app.use(session({
   secret: process.env.SESSION_SECRET,
   saveUninitialized: true,
   resave: false,
   cookie: {
-    sameSite: 'none', //true, //the requester is on the same domain
-    secure: true, //false, //not using https
+    // sameSite: 'none', //true, //the requester is on the same domain
+    sameSite: process.env.ENV === 'local' ? true : 'none',
+    secure: process.env.ENV === 'local' ? false : true, //false, //not using https
     httpOnly: false,  //site on http only
     maxAge: 60000000 //cookie time to live
   },
   rolling: true //session gets refreshed
-}))
+}));
 
 //Initializes passport
 app.use(passport.initialize());
@@ -62,7 +62,7 @@ app.use(
     credentials: true,
     origin: [process.env.CLIENT_HOSTNAME]
   })
-)
+);
 
 const index = require('./routes/index');
 app.use('/', index);

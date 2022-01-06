@@ -12,11 +12,10 @@ const requireLogin = (req, res, next) => {
   if(req.user) {
     next();
   } else {
-    console.log(req.user)
     res.status(401).json('You must be logged in to access this content');
     return;
   }
-}
+};
 
 //username, password, email, fullname
 router.post('/signup', async (req, res) => {

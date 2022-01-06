@@ -12,7 +12,7 @@ const requireLogin = (req, res, next) => {
     res.status(401).json('You must be logged in to access this content');
     return;
   }
-}
+};
 
 //Read
 router.get('/orders', async (_req, res) => {
@@ -51,7 +51,6 @@ router.get('/orders/purchases', requireLogin, async (req, res) => {
 //Create order - no shipped date or comment at this moment
 router.post('/orders', requireLogin, async (req, res) => {
   try {
-    console.log(req.body);
     const {products, total, client, orderDate, status} = req.body;
     if(!products || !client || !status) {
       res.status(400).json(`Missing fields`);
@@ -175,14 +174,14 @@ router.put('/orders/:id/status', requireLogin, async (req, res) => {
   } catch (error) {
     res.status(500).json(`Error occurred ${error}`);
   }
-})
+});
 
 //Calculate order
 const calculateOrderAmount = userCart => {
   let total = userCart.reduce((accumulator, curr) => accumulator + curr.quantity * curr.product.price, 0).toFixed(2);
   total = parseInt(total * 100);
-  return total
-}
+  return total;
+};
 
 //Payment
 router.post("/create-payment-intent", async (req, res) => {
