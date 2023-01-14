@@ -64,6 +64,8 @@ app.use(
   })
 );
 
+app.set('view engine', 'ejs');
+
 const index = require('./routes/index');
 app.use('/', index);
 

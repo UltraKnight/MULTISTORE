@@ -15,7 +15,7 @@ const requireLogin = (req, res, next) => {
 };
 
 //Read
-router.get('/orders', async (_req, res) => {
+router.get('/orders', requireLogin, async (_req, res) => {
   try {
     const ordersDB = await Order.find().populate(['products.product', 'products.seller', 'client', 'comments.author', 'comments.to']).sort({orderDate : -1});
     res.status(200).json(ordersDB);
