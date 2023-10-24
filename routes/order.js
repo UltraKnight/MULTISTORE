@@ -17,7 +17,11 @@ const requireLogin = (req, res, next) => {
 //Read
 router.get('/orders', requireLogin, async (_req, res) => {
   try {
-    const ordersDB = await Order.find().populate(['products.product', 'products.seller', 'client', 'comments.author', 'comments.to']).sort({orderDate : -1});
+    const ordersDB = await Order.find().populate(['products.product', 'comments.author', 'comments.to'])
+      .populate('client', 'billing.firstName billing.lastName shipping.firstName shipping.lastName')
+      .populate('products.seller', 'billing.firstName billing.lastName shipping.firstName shipping.lastName storeName fullName')
+      .sort({orderDate : -1});
+
     res.status(200).json(ordersDB);
   } catch (error) {
     res.status(500).json(`Error occurred ${error}`);
@@ -27,7 +31,11 @@ router.get('/orders', requireLogin, async (_req, res) => {
 //Get sale orders
 router.get('/orders/sales', requireLogin, async (req, res) => {
   try {
-    const ordersDB = await Order.find({'products.seller': req.user._id}).populate(['products.product', 'products.seller', 'client', 'comments.author', 'comments.to']).sort({orderDate : -1});
+    const ordersDB = await Order.find({'products.seller': req.user._id}).populate(['products.product', 'comments.author', 'comments.to'])
+      .populate('client', 'billing.firstName billing.lastName shipping.firstName shipping.lastName')
+      .populate('products.seller', 'billing.firstName billing.lastName shipping.firstName shipping.lastName')
+      .sort({orderDate : -1});
+
     res.status(200).json(ordersDB);
 
   } catch (error) {
@@ -39,7 +47,10 @@ router.get('/orders/sales', requireLogin, async (req, res) => {
 //Get purchase orders
 router.get('/orders/purchases', requireLogin, async (req, res) => {
   try {
-    const ordersDB = await Order.find({client: req.user._id}).populate(['products.product', 'products.seller', 'client', 'comments.author', 'comments.to']).sort({orderDate : -1});
+    const ordersDB = await Order.find({client: req.user._id}).populate(['products.product', 'comments.author', 'comments.to'])
+    .populate('client', 'billing.firstName billing.lastName shipping.firstName shipping.lastName')
+    .populate('products.seller', 'billing.firstName billing.lastName shipping.firstName shipping.lastName storeName fullName')
+    .sort({orderDate : -1});
     res.status(200).json(ordersDB);
 
   } catch (error) {
