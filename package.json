@@ -6,7 +6,7 @@
     "start": "node -r dotenv/config ./bin/www",
     "start:local": "set DOTENV_CONFIG_PATH=.env.local&&nodemon -r dotenv/config ./bin/www",
     "dev": "DEBUG=project-management-server:* nodemon ./bin/www",
-    "dev-windows": "nodemon ./bin/www"
+    "dev-windows": "nodemon -r dotenv/config ./bin/www"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

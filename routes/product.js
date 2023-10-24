@@ -30,7 +30,7 @@ router.get('/products/me', requireLogin, async (req, res) => {
 //Get products by category
 router.get('/products/by-category/:categoryId', async (req, res) => {
   try {
-    const productsDB = await Product.find({category: req.params.categoryId}).populate(['category', 'createdBy']);
+    const productsDB = await Product.find({category: req.params.categoryId}).populate('category').populate('createdBy', 'billing.state billing.country billing.phoneConfirmed shipping.state shipping.country shipping.phoneConfirmed');
     res.status(200).json(productsDB);
 
   } catch (error) {
@@ -47,9 +47,9 @@ router.get('/products', async (req, res) => {
   try {
     let productsDB = [];
     if(search) {
-      productsDB = await Product.find({name: { "$regex": `${search}`, "$options": "i" }, quantity: {"$gte": stock}}).limit(limit).populate(['category', 'createdBy']);
+      productsDB = await Product.find({name: { "$regex": `${search}`, "$options": "i" }, quantity: {"$gte": stock}}).limit(limit).populate('category').populate('createdBy', 'billing.state billing.country billing.phoneConfirmed shipping.state shipping.country shipping.phoneConfirmed');
     } else {
-      productsDB = await Product.find().limit(limit).populate(['category', 'createdBy']);
+      productsDB = await Product.find().limit(limit).populate('category').populate('createdBy', 'billing.state billing.country billing.phoneConfirmed shipping.state shipping.country shipping.phoneConfirmed');
     }
     res.status(200).json(productsDB);
   } catch (error) {
