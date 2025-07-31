@@ -3,13 +3,15 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const Product = require('../models/Product.model');
 const User = require('../models/User.model');
-const fileUpload = require('../configs/cloudinary');
 const bcrypt = require('bcryptjs');
+const cloudinary = require('../configs/cloudinary');
+const fs = require('fs');
 
 const requireLogin = (req, res, next) => {
   if(req.user) {
     next();
   } else {
+    console.log('User not logged in');
     res.status(401).json('You must be logged in to access this content');
     return;
   }
@@ -91,15 +93,16 @@ router.post('/products', requireLogin, async (req, res) => {
 router.delete('/products/:id', requireLogin, async (req, res) => {
   try {
     let product = await Product.findById(req.params.id);
-    if(! product.createdBy.equals(req.user._id)) {
+    if(!product.createdBy.equals(req.user._id)) {
       res.status(401).json('You cannot delete a product you did\'nt create.');
       return;
     }
 
-    await Product.findByIdAndRemove(req.params.id);
+    await Product.findByIdAndDelete(req.params.id);
     await User.findByIdAndUpdate(req.user._id, {$pull: {products: req.params.id}});
     res.status(200).json(`Product with id ${req.params.id} was deleted.`);
   } catch (error) {
+    console.error('Error occurred while deleting product:', error);
     res.status(500).json(`Error occurred ${error}`);
   }
 });
@@ -156,11 +159,25 @@ router.put('/products/:id/sell', requireLogin, async (req, res) => {
   }
 });
 
-router.post('/upload', fileUpload.single('file'), (req, res) => {
+router.post('/upload', async (req, res) => {
+  if (!req.files || !req.files.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
   try {
-    res.status(200).json({ fileUrl: req.file.path});
+    const uploadedFile = req.files.file;
+      const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath, {
+      folder: 'multistore',
+      allowed_formats: ['jpg', 'png']
+    });
+
+    // delete the temp file
+    fs.unlinkSync(uploadedFile.tempFilePath);
+
+    res.status(200).json({ fileUrl: result.secure_url});
   } 
   catch(error) {
+    console.error('Error uploading file:', error);
     res.status(500).json(`Error occurred ${error}`);
   };
 });

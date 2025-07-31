@@ -100,7 +100,7 @@ router.delete('/categories/:id', requireLogin, async (req, res) => {
       return;
     }
 
-    await Category.findByIdAndRemove(req.params.id);
+    await Category.findByIdAndDelete(req.params.id);
     await User.findByIdAndUpdate(req.user._id, {
       $pull: { categories: req.params.id },
     });

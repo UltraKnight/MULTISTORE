@@ -52,7 +52,7 @@ router.delete('/rates/:id', requireLogin, async (req, res) => {
         return;
       }
   
-      await Rate.findByIdAndRemove(req.params.id);
+      await Rate.findByIdAndDelete(req.params.id);
       res.status(200).json(`Rate with id ${req.params.id} was deleted.`);
     } catch (error) {
       res.status(500).json(`Error occurred ${error}`);

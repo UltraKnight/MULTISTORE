@@ -104,7 +104,7 @@ router.delete('/orders/:id', requireLogin, async (req, res) => {
     await User.findByIdAndUpdate(order.client, {$pull: {purchases: order.id}});
     console.log('Order removed from the Client');
     
-    await Order.findByIdAndRemove(req.params.id);
+    await Order.findByIdAndDelete(req.params.id);
     res.status(200).json(`Order with id ${req.params.id} was deleted.`);
   } catch (error) {
     res.status(500).json(`Error occurred ${error}`);

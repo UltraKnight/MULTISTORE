@@ -96,6 +96,7 @@ router.get('/email/confirm/:id', emailController.confirmEmail);
 router.post('/login', (req, res, next) => {
   passport.authenticate('local', (err, theUser, failureDetails) => {
     if (err) {
+      console.error(err.message)
       res
         .status(500)
         .json({ message: 'Something went wrong authenticating user' });
