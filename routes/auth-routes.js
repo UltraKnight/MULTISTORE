@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User.model');
 const passport = require('passport');
 const emailController = require('./email/email.controller');
+const rateLimit = require('express-rate-limit');
 
 const templates = require('./email/email.templates');
 const sendEmail = require('./email/email.send');
@@ -93,9 +94,26 @@ router.post('/email/send', async (req, res) => {
 
 router.get('/email/confirm/:id', emailController.confirmEmail);
 
-router.post('/login', (req, res, next) => {
+
+const loginLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // wait 5 minutos after 5 attempts
+  max: 5, // 5 tries per IP
+  message: 'Too many login attempts, please try again later.',
+  // Log data about the blocked request
+  handler: (req, res, _, options) => {
+    const ip = req.ip;
+    const path = req.originalUrl;
+    const timestamp = new Date().toISOString();
+
+    console.warn(`[429] Login limit exceeded | IP: ${ip} | Route: ${path} | ${timestamp}`)
+    res.status(options.statusCode).send(options.message);
+  }
+});
+
+router.post('/login', loginLimiter, (req, res, next) => {
   passport.authenticate('local', (err, theUser, failureDetails) => {
     if (err) {
+      console.error(err.message)
       res
         .status(500)
         .json({ message: 'Something went wrong authenticating user' });
