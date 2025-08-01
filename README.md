@@ -1,7 +1,10 @@
 ### Multistore - Backend
 See the project working on: https://multistore.netlify.app/
 
-This is the backend of https://github.com/UltraKnight/MULTISTORE-client, Check the client repo README for more details.
+
+This is the backend of https://github.com/UltraKnight/MULTISTORE-client.
+
+Check the client repo README for more details.
 
 ## Installation
 
