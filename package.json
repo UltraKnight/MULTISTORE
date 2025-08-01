@@ -2,6 +2,9 @@
   "name": "project-management-server",
   "version": "2.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "start": "node -r dotenv/config ./bin/www",
     "start:local": "set DOTENV_CONFIG_PATH=.env.local&&nodemon -r dotenv/config ./bin/www",
