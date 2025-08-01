@@ -13,9 +13,9 @@ const requireLogin = (req, res, next) => {
   }
 };
 
-const checkIfCategoryExists = async (name) => {
+const checkIfCategoryExists = async (newName) => {
   const foundCategory = await Category.findOne({
-    name: { $regex: new RegExp(`^${name}$`, 'i') },
+    name: { $regex: new RegExp(`^${newName}$`, 'i') },
   });
 
   return foundCategory;
@@ -68,7 +68,6 @@ router.post('/categories', requireLogin, async (req, res) => {
       res.status(400).json(`Missing fields`);
       return;
     }
-
     const categoryExists = await checkIfCategoryExists(name);
     if (categoryExists) {
       res.status(400).json('Category already exists');
@@ -135,7 +134,8 @@ router.put('/categories/:id', requireLogin, async (req, res) => {
       return;
     }
 
-    const categoryExists = await checkIfCategoryExists(category.name);
+    const newName = req.body.name;
+    const categoryExists = await checkIfCategoryExists(newName);
     if (categoryExists) {
       res.status(400).json('A category with this name already exists.')
       return;
