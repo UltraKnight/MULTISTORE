@@ -137,9 +137,13 @@ router.post('/login', loginLimiter, (req, res, next) => {
 router.post('/logout', (req, res) => {
   req.logout(function (err) {
     if (err) {
-      res.status(500).json({ message: "Whoops! Let's try again?" });
+      return res.status(500).json({ message: "Whoops! Let's try again?" });
     }
   });
+
+  // Destroy the session after logout
+  req.session.destroy();
+  res.clearCookie('connect.sid'); // Clear session cookie on client
   res.status(200).json('logout success');
 });
 
