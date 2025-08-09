@@ -94,7 +94,6 @@ router.post('/email/send', async (req, res) => {
 
 router.get('/email/confirm/:id', emailController.confirmEmail);
 
-
 const loginLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // wait 5 minutos after 5 attempts
   max: 5, // 5 tries per IP
@@ -105,18 +104,16 @@ const loginLimiter = rateLimit({
     const path = req.originalUrl;
     const timestamp = new Date().toISOString();
 
-    console.warn(`[429] Login limit exceeded | IP: ${ip} | Route: ${path} | ${timestamp}`)
+    console.warn(`[429] Login limit exceeded | IP: ${ip} | Route: ${path} | ${timestamp}`);
     res.status(options.statusCode).send(options.message);
-  }
+  },
 });
 
 router.post('/login', loginLimiter, (req, res, next) => {
   passport.authenticate('local', (err, theUser, failureDetails) => {
     if (err) {
-      console.error(err.message)
-      res
-        .status(500)
-        .json({ message: 'Something went wrong authenticating user' });
+      console.error(err.message);
+      res.status(500).json({ message: 'Something went wrong authenticating user' });
       return;
     }
     if (!theUser) {
@@ -159,9 +156,7 @@ router.post('/cart/add', requireLogin, async (req, res) => {
   const product = req.body;
   try {
     const foundUser = await User.findById(req.user._id);
-    const productInCart = await foundUser.cart.find((item) =>
-      item.product.equals(product.product)
-    );
+    const productInCart = await foundUser.cart.find((item) => item.product.equals(product.product));
     if (productInCart) {
       const index = foundUser.cart.indexOf(productInCart);
       foundUser.cart[index].quantity += product.quantity;
@@ -181,9 +176,7 @@ router.post('/cart/add', requireLogin, async (req, res) => {
 router.post('/cart/remove', requireLogin, async (req, res) => {
   const product = req.body;
   try {
-    const foundUser = await User.findById(req.user._id).populate(
-      'cart.product'
-    );
+    const foundUser = await User.findById(req.user._id).populate('cart.product');
     //if there is at least one deleted product in the cart
     for (const item of foundUser.cart) {
       if (!item.product) {
@@ -201,14 +194,8 @@ router.post('/cart/remove', requireLogin, async (req, res) => {
     }
 
     //if the product was not deleted by the seller
-    const productInCart = await foundUser.cart.find((item) =>
-      item.product._id.equals(product.product)
-    );
-    if (
-      productInCart &&
-      product.quantity > 0 &&
-      productInCart.quantity > product.quantity
-    ) {
+    const productInCart = await foundUser.cart.find((item) => item.product._id.equals(product.product));
+    if (productInCart && product.quantity > 0 && productInCart.quantity > product.quantity) {
       const index = foundUser.cart.indexOf(productInCart);
       foundUser.cart[index].quantity -= product.quantity;
       await User.findByIdAndUpdate(req.user._id, { cart: foundUser.cart });
