@@ -7,7 +7,7 @@
   },
   "scripts": {
     "start": "node -r dotenv/config ./bin/www",
-    "start:local": "set DOTENV_CONFIG_PATH=.env.local&&nodemon -r dotenv/config ./bin/www",
+    "start:local": "cross-env DOTENV_CONFIG_PATH=.env.local nodemon -r dotenv/config ./bin/www",
     "dev": "DEBUG=project-management-server:* nodemon ./bin/www",
     "dev-windows": "nodemon -r dotenv/config ./bin/www"
   },
@@ -31,6 +31,7 @@
     "stripe": "^18.4.0"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "nodemon": "^3.1.10"
   }
 }
