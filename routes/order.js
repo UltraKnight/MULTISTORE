@@ -32,7 +32,7 @@ router.get('/orders', requireLogin, async (_req, res) => {
 router.get('/orders/sales', requireLogin, async (req, res) => {
   try {
     const ordersDB = await Order.find({'products.seller': req.user._id}).populate(['products.product', 'comments.author', 'comments.to'])
-      .populate('client', 'billing.firstName billing.lastName shipping.firstName shipping.lastName')
+      .populate('client', 'billing.firstName billing.lastName shipping.firstName shipping.lastName storeName')
       .populate('products.seller', 'billing.firstName billing.lastName shipping.firstName shipping.lastName')
       .sort({orderDate : -1});
 
