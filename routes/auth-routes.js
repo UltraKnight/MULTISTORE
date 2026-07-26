@@ -139,12 +139,17 @@ router.post('/logout', (req, res) => {
     if (err) {
       return res.status(500).json({ message: "Whoops! Let's try again?" });
     }
-  });
 
-  // Destroy the session after logout
-  req.session.destroy();
-  res.clearCookie('connect.sid'); // Clear session cookie on client
-  res.status(200).json('logout success');
+    // Destroy the session after logout
+    req.session.destroy(function (sessionErr) {
+      if (sessionErr) {
+        return res.status(500).json({ message: 'Could not clear the session.' });
+      }
+
+      res.clearCookie('connect.sid'); // Clear session cookie on client
+      res.status(200).json('logout success');
+    });
+  });
 });
 
 router.get('/loggedin', (req, res) => {
