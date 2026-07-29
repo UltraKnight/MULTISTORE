@@ -21,6 +21,7 @@ mongoose
   });
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production' || process.env.ENV === 'production';
 
 // enable file upload
 const fileUpload = require('express-fileupload');
@@ -44,10 +45,9 @@ app.use(
     saveUninitialized: true,
     resave: false,
     cookie: {
-      // sameSite: 'none', //true, //the requester is on the same domain
-      sameSite: process.env.ENV === 'local' ? true : 'none',
-      secure: process.env.ENV === 'local' ? false : true, //false, //not using https
-      httpOnly: false, //site on http only
+      sameSite: isProduction ? 'none' : 'lax',
+      secure: isProduction, // false = not using https
+      httpOnly: true, //site on http only - cookie not available for JS
       maxAge: 60000000, //cookie time to live
     },
     rolling: true, //session gets refreshed
@@ -67,7 +67,17 @@ app.locals.title = 'Multistore';
 app.use(
   cors({
     credentials: true,
-    origin: [process.env.CLIENT_HOSTNAME],
+    origin: (origin, callback) => {
+      const allowedOrigins = [process.env.CLIENT_HOSTNAME, 'http://localhost:5173', 'http://127.0.0.1:5173'];
+      const normalizedOrigins = allowedOrigins.filter(Boolean);
+
+      if (!origin || normalizedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(null, false);
+    },
   }),
 );
 
@@ -93,5 +103,8 @@ app.use('/api', order);
 
 const rate = require('./routes/rate');
 app.use('/api', rate);
+
+const aiRoutes = require('./routes/ai-routes');
+app.use('/api', aiRoutes);
 
 module.exports = app;
